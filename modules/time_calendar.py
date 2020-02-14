@@ -1,7 +1,10 @@
 import time
 import datetime
-from matrix_creator import PickleDataType, Extended_UniqueItem_List, ExtendedDict
-from cli_tools import amarelo, verde
+
+from modules.py_obj_data_tools import PickleDataType, Extended_UniqueItem_List, ExtendedDict
+from modules.time_calendar_config import pasta_dados
+from modules.cli_tools import amarelo, verde
+
 
 class DateHandlers:
    def convert_brt_timestamp(self, date):
@@ -32,10 +35,12 @@ class DateHandlers:
 
 
 class Calendar(DateHandlers, PickleDataType):
-   def __init__(self):
+   def __init__(self, fname):
       super(Calendar).__init__()
-      self.people = Extended_UniqueItem_List()
-      self.absence_dates = ExtendedDict()
+      self.pessoas = Extended_UniqueItem_List()
+      self.datas_de_ausencias = ExtendedDict()
+      self.target_folder = pasta_dados
+      self.persist(file_ext=".cal", fname=fname)
 
    def add(self, name, init_date, end_date=False):
       if not end_date:
@@ -43,47 +48,49 @@ class Calendar(DateHandlers, PickleDataType):
       else:
          period_tuple = self.create_period_pair(init_date, end_date)
 
-      self.people.append(name)
-      self.absence_dates.append(name, period_tuple)
+      self.pessoas.append(name)
+      self.datas_de_ausencias.append(name, period_tuple)
+      self.persist()
    
-   def check(self, start_date, end_date=False, list_people=False, sort_by_amout_of_people=False):
+   def check(self, start_date, end_date=False, list_pessoas=False, sort_by_amout_of_pessoas=False):
       if not end_date:
          self.check_period([self.convert_brt_timestamp(start_date)])
       else:
          period_pair = self.create_period_pair(start_date, end_date)
          extended_period = self.extanded_period_pair(period_pair)
-         self.check_period(extended_period, list_people=list_people, sort_by_amout_of_people=sort_by_amout_of_people)
+         self.check_period(extended_period, list_pessoas=list_pessoas, sort_by_amout_of_pessoas=sort_by_amout_of_pessoas)
 
-   def print_day_info(self, response_tuple, list_people=False):
-      print(amarelo(response_tuple[0]))
-      print(amarelo('Pessoas disponíveis:'), response_tuple[1])
-      if list_people:
+
+   def print_day_info(self, response_tuple, list_pessoas=False):
+      print(amarelo(str(response_tuple[0]).split(' ')[0]))
+      print(amarelo('Número de pessoas disponíveis:'), response_tuple[1])
+      if list_pessoas:
          print(response_tuple[2])
 
 
-   def check_period(self, list_of_dates, list_people=False, sort_by_amout_of_people=False):
+   def check_period(self, list_of_dates, list_pessoas=False, sort_by_amout_of_pessoas=False):
       output = []
       for day in list_of_dates:
-         people_not_avaliable = Extended_UniqueItem_List()
-         for person in self.absence_dates.keys():
-            for interval in self.absence_dates[person]:
+         pessoas_not_avaliable = Extended_UniqueItem_List()
+         for person in self.datas_de_ausencias.keys():
+            for interval in self.datas_de_ausencias[person]:
                if day >= interval[0] and day <= interval[1]:
-                  people_not_avaliable.append(person)
+                  pessoas_not_avaliable.append(person)
          
-         people_avaliable = Extended_UniqueItem_List(self.people.copy()) - people_not_avaliable
+         pessoas_avaliable = Extended_UniqueItem_List(self.pessoas.copy()) - pessoas_not_avaliable
 
-         tp = (day, len(people_avaliable), people_avaliable)
+         tp = (day, len(pessoas_avaliable), pessoas_avaliable)
          output.append(tp)
          
-         if not sort_by_amout_of_people:
-            self.print_day_info(tp, list_people=list_people)
+         if not sort_by_amout_of_pessoas:
+            self.print_day_info(tp, list_pessoas=list_pessoas)
 
-      sort_by_num_of_people = lambda x: x[1]
-      output.sort(key=sort_by_num_of_people, reverse=True)
+      sort_by_num_of_pessoas = lambda x: x[1]
+      output.sort(key=sort_by_num_of_pessoas, reverse=True)
 
-      if sort_by_amout_of_people:
+      if sort_by_amout_of_pessoas:
          for tp in output:
-            self.print_day_info(tp, list_people=list_people)
+            self.print_day_info(tp, list_pessoas=list_pessoas)
 
 
 

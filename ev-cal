@@ -1,0 +1,124 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+#
+#
+#  Copyright 2017 Daniel Cruz <bwb0de@bwb0dePC>
+#  Version 0.1
+#
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program; if not, write to the Free Software
+#  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+#  MA 02110-1301, USA.
+#
+#
+
+
+"""
+
+Programa para gestão do combate
+
+Usage:
+    ev-cal add-calendar <filename>
+    ev-cal add-person <name>
+    ev-cal add-event
+    ev-cal set-calendar
+    ev-cal list-people
+    ev-cal ?
+
+Options:
+    --version
+
+"""
+
+import os
+
+from docopt import docopt
+
+from modules.time_calendar import Calendar
+from modules.time_calendar_config import calendario_alvo_ref, pasta_dados
+from modules.py_pickle_handlers import read_pickle
+from modules.cli_tools import write_to_file, pick_options, read_input, read_from_file, sim_ou_nao
+
+args = docopt(__doc__)
+
+def minimal_info_check():
+    try:
+        calendario_alvo = read_from_file(calendario_alvo_ref)
+    except FileNotFoundError:
+        cal_files = os.listdir(pasta_dados)
+        if not cal_files:
+            print("Não há calendários. Execute 'ev-cal add-calendar' para criar um...")
+            exit()
+        else:
+            print("Você precisa definir o calentário alvo. Execute 'ev-cal set' e escolha um calendário.")
+            exit()
+    return calendario_alvo
+
+def main():
+    if args['add-calendar']:
+        new_cal = Calendar(args['<filename>'])
+        write_to_file(new_cal.filename, calendario_alvo_ref)
+
+    elif args['add-person']:
+        calendario_alvo = minimal_info_check()
+        cal = read_pickle(pasta_dados + calendario_alvo)
+        cal.pessoas.append(args['<name>'])
+        cal.persist()
+
+
+    elif args['add-event']:
+        calendario_alvo = minimal_info_check()
+        cal = read_pickle(pasta_dados + calendario_alvo)
+        nome = read_input(input_label="Nome da pessoa", break_line=True)
+        data_inicio = read_input(input_label="Data de início da ausência", break_line=True)
+        data_fim = read_input(input_label="Data de fim da ausência", break_line=True)
+        cal.add(nome, data_inicio, data_fim)
+
+    elif args['set-calendar']:
+        minimal_info_check()
+        list_of_cals = os.listdir(pasta_dados)
+        selected = pick_options(list_of_cals, input_label="Selecione o calendário que será utilizado")
+        write_to_file(selected, calendario_alvo_ref)
+
+    elif args['list-people']:
+        calendario_alvo = minimal_info_check()
+        cal = read_pickle(pasta_dados + calendario_alvo)
+        #print(cal.pessoas.remove("Aline Ione"))
+        #cal.persist()
+        for pessoa in cal.pessoas:
+            print(pessoa)
+
+
+    elif args['?']:
+        calendario_alvo = minimal_info_check()
+        cal = read_pickle(pasta_dados + calendario_alvo)
+        op = sim_ou_nao(input_label="Verificar por período?")
+        if op == 's':
+            data_inicio = read_input(input_label="Data inicial do período", break_line=True, data_pattern='\d\d\/\d\d/\d\d\d\d', waring_msg='A data deve ser apresentada no formato DD/MM/AAAA')
+            data_termino = read_input(input_label="Data final do período", break_line=True, data_pattern='\d\d\/\d\d/\d\d\d\d', waring_msg='A data deve ser apresentada no formato DD/MM/AAAA')
+        else:
+            data_inicio = read_input(input_label="Data desejada", break_line=True, data_pattern='\d\d\/\d\d/\d\d\d\d', waring_msg='A data deve ser apresentada no formato DD/MM/AAAA')
+            data_termino = data_inicio
+
+        cal.check(data_inicio, data_termino, list_pessoas=True)
+
+
+
+
+
+
+
+
+
+if __name__ == '__main__':
+	main()
