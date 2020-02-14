@@ -51,7 +51,6 @@ from modules.cli_tools import write_to_file, pick_options, read_input, read_from
 
 args = docopt(__doc__)
 
-
 def minimal_info_check():
     try:
         calendario_alvo = read_from_file(calendario_alvo_ref)
@@ -64,7 +63,6 @@ def minimal_info_check():
             print("Você precisa definir o calentário alvo. Execute 'ev-cal set' e escolha um calendário.")
             exit()
     return calendario_alvo
-
 
 def main():
     if args['add-calendar']:
